@@ -12,10 +12,14 @@ For older Node.js versions a key `--experimental-modules` must be added. However
 
 | Key | Alias | Mandatory | Description | Example |
 | -------- | ----- | --------- | ----------- | ------- |
-| `--config <file>` | `-c` | No | Specifies a settings file (JSON). | `-c config.json` |  
-| `--port <number>` | `-p` | No | Specifies network port the server listens on. | `-p 7778` |  
-| `--local` | `-l` | No | Binds the server to `localhost`. | `--local` |
-| `--help` | | No | Prints a help. | `--help` |
+| `--config <file>` | `-c` | No | Load configuration from file (JSON) | `-c config.json` |  
+| `--port <n>` | `-p` | No | Specify network port server listens on | `-p 7778` |  
+| `--local` | - | No | Bind the server to local machine host | `--local` |
+| `--mirror <ip>[:<port>]` | `-m` | No | Mirror remote instance (receive only). Default port: `7778` | `-m 192.168.0.50:7777` |
+| `--preload <file>` | `-d` | No | Preload dictionary with key-values from file (JSON or plain text) | `-d values.json` |
+| `--debug` | - | No | Enable detailed output to console | `--debug` |
+| `--no-console` | - | No | Suppress all output to console | `--no-console` |
+| `--help` | - | No | Print help (no run) | `--help` |
 
 ## Configuration
 
@@ -28,4 +32,22 @@ For older Node.js versions a key `--experimental-modules` must be added. However
         "port": 7778
     }
 }
+```
+
+#### Example of pre-loadable key-value file (*.json):
+
+```
+{
+    "KeyA": "ValueA",
+    "KeyB": "ValueB",
+    "KeyC": "ValueC"
+}
+```
+
+#### Example of pre-loadable key-value file (*.txt):
+
+```
+KeyA=ValueA
+KeyB=ValueB
+KeyC=ValueC
 ```
