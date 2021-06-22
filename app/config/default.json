@@ -1,0 +1,6 @@
+{
+    "network": {
+        "interface": "*",
+        "port": 7778
+    }
+}
