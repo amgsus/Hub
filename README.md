@@ -13,12 +13,14 @@ For older Node.js versions a key `--experimental-modules` must be added. However
 | Key | Alias | Mandatory | Description | Example |
 | -------- | ----- | --------- | ----------- | ------- |
 | `--config <file>` | `-c` | No | Load configuration from file (JSON) | `-c config.json` |  
-| `--port <n>` | `-p` | No | Specify network port server listens on | `-p 7778` |  
-| `--local` | - | No | Bind the server to local machine host | `--local` |
-| `--mirror <ip>[:<port>]` | `-m` | No | Mirror remote instance (receive only). Default port: `7778` | `-m 192.168.0.50:7777` |
+| `--port <n>` | `-p` | No | Specify network port server listens on | `-p 7778` |
+| `--local` | - | No | Force bind server to local host  | `--local` |
+| `--mirror <ip>[:<port>]` | `-m` | No | Mirror remote instance | `-m 192.168.0.50:7778` |
 | `--preload <file>` | `-d` | No | Preload dictionary with key-values from file (JSON or plain text) | `-d values.json` |
-| `--debug` | - | No | Enable detailed output to console | `--debug` |
-| `--no-console` | - | No | Suppress all output to console | `--no-console` |
+| `--http [<ip>[:<port>]]` | `-h` | No | Enable REST API server on specified IP-address and port. Default: `0.0.0.0:7780` | `-h 0.0.0.0:7780` |
+| `--debug` | - | No | Enable debug output | `--debug` |
+| `--verbose` | - | No | Enable detailed output | `--debug` |
+| `--no-console` | - | No | Suppress any output to console | `--no-console` |
 | `--help` | - | No | Print help (no run) | `--help` |
 
 ## Configuration

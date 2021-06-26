@@ -1,17 +1,21 @@
 /*
- * By:              A.G.
- * Created on:      2020.07.19
- * Last modified:   2020.07.19
+ * Author: A.G.
+ *   Date: 2021.06.26
  */
 
 import Commander from "commander";
 
 const args = (() => {
     Commander
-        .option("-c, --config <fileName>", "sets a configuration file to use")
-        .option("-p, --port <n>", "sets server listening port")
-        .option("-l, --local", "forces IP binding to 127.0.0.1 (localhost)", false)
-        .option("--debug", "enables printing of debug/trace information (aka developer mode)", false)
+        .option("-c, --config <file>", "load configuration from file (JSON)", "./app/config/default.json")
+        .option("-p, --port <n>", "specify network port server listens on", "7778")
+        .option("-l, --local", "force bind server to local host", false)
+        .option("-m, --mirror <ip>[:<port>]", "mirror remote instance")
+        .option("-d, --preload <file>", "preload dictionary with key-values from file")
+        .option("-h, --http [<ip>[:<port>]]", "enable REST API server on specified IP-address and port", "0.0.0.0:7780")
+        .option("--debug", "enable debug output", false)
+        .option("--verbose", "enable detailed output", false)
+        .option("--no-console", "suppress any output to console", false)
     ;
     Commander.parse(process.argv);
     return Commander.opts();
