@@ -3,9 +3,14 @@
  *   Date: 2021.06.26
  */
 
+import { readFileSync } from "fs";
 import Commander from "commander";
 
 const args = (() => {
+    Commander.version((() => {
+        let text = readFileSync(`package.json`).toString(`utf8`);
+        return JSON.parse(text).version;
+    })());
     Commander
         .option("-c, --config <file>", "load configuration from file (JSON)", "./app/config/default.json")
         .option("-p, --port <n>", "specify network port server listens on", "7778")
