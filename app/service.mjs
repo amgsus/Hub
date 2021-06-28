@@ -3,10 +3,10 @@
  *   Date: 2021.06.26
  */
 
-import { Hub }                from "./../lib/server.mjs";
-import { createLogger }       from "./logging.mjs";
-import { loadValuesFromFile } from "./util.mjs";
-import config                 from "./config.mjs";
+import { Hub }                  from "./../lib/server.mjs";
+import { createLogger }         from "./logging.mjs";
+import { importValuesFromFile } from "./util.mjs";
+import config                   from "./config.mjs";
 
 const log = createLogger();
 
@@ -25,14 +25,18 @@ const log = createLogger();
         const logPreload = createLogger("--preload");
 
         try {
-            entries = await loadValuesFromFile(config.preload);
+            let tuple = await importValuesFromFile(config.preload);
+            if (tuple.ignoredCount > 0 && config.verbose) {
+                logPreload.silly(`Skipped ${tuple.ignoredCount} special key(s)`);
+            }
+            entries = tuple.entries;
         } catch (e) {
             logPreload.error(e.message);
         }
 
         for ( let x of entries ) {
             if (config.verbose) {
-                logPreload.silly(`Added: ${x.name}`);
+                logPreload.silly(`Added: "${x.name}"`);
             }
             server.updateValue(x.name, x.value);
         }

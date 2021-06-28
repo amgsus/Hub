@@ -56,40 +56,54 @@ export function readJSONFile(filename) {
 
 const rex = new RegExp(/(?:\s*)(?<key>(?<mod>[#$%!~])?(?<id>[^@=]*?))(?:(?<q>\?)?=?|@(?<ts>[-+]?\d+)=)(?:(?<==)(?<value>.*))?(?:\r\n)/, "");
 
-export function loadValuesFromFile(filename) {
+export function importValuesFromFile(filename) {
     let ext = getFileExtension(filename).toLowerCase();
 
     if ([ '.txt', '.json' ].indexOf(ext) < 0) {
         throw new Error(`Unsupported file extension: ${getFileExtension(filename)}`);
     }
 
+    function validate(s) {
+        let parsed = rex.exec(s);
+        if (parsed && parsed.groups.id) {
+            if (!parsed.groups.mod && !parsed.groups.q) {
+                return {
+                    name: parsed.groups.id,
+                    value: parsed.groups.value || ''
+                };
+            } else {
+                return `Special not allowed: "${parsed.input.trim()}"`;
+            }
+        }
+        return null;
+    }
+
     return new Promise((res, rej) => {
         let entries = [];
+        let ignoredCount = 0;
 
         if (ext === '.txt') {
             eachLine(filename, (line, last, cb) => {
+                let result = true;
                 try {
-                    let parsed = rex.exec(`${line}\r\n`);
-                    if (parsed && parsed.groups.id) {
-                        if (!parsed.groups.mod && !parsed.groups.q) {
-                            entries.push({
-                                name: parsed.groups.id,
-                                value: parsed.groups.value || ''
-                            });
+                    let obj = validate(`${line}\r\n`);
+                    if (obj) {
+                        if (typeof obj === 'string') {
+                            ignoredCount++;
+                        } else {
+                            entries.push(obj);
                         }
                     }
                 } catch (eline) {
+                    result = false;
                     rej(eline);
-                    cb(false);
-                    return;
                 }
-                //if (last) res(entries);
-                cb(true);
+                cb(result);
             }, (err) => {
                 if (err) {
                     rej(err);
                 } else {
-                    res(entries);
+                    res({ entries, ignoredCount });
                 }
             });
         } else {
@@ -97,14 +111,18 @@ export function loadValuesFromFile(filename) {
                 let keys = Object.keys(data);
                 for ( let k of keys ) {
                     if (k) {
-                        let value = typeof data[k] === 'object' ? JSON.stringify(data[k]) : `${data[k]}`;
-                        entries.push({
-                            name: k,
-                            value: value
-                        });
+                        let value = typeof data[k] === 'object' ? JSON.stringify(data[k]) : `${data[k]}`; // Serialize nested object, or force convert to string.
+                        let obj = validate(`${k}=${value}\r\n`);
+                        if (obj) {
+                            if (typeof obj === 'string') {
+                                ignoredCount++;
+                            } else {
+                                entries.push(obj);
+                            }
+                        }
                     }
                 }
-                return entries;
+                return { entries, ignoredCount };
             }).catch(rej).then(res);
         }
     });
