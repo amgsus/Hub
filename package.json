@@ -10,6 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "colors": "1.4.0",
-    "commander": "5.1.0"
+    "commander": "5.1.0",
+    "line-reader": "0.4.0"
+  },
+  "optionalDependencies": {
+    "@hapi/hapi": "20.1.4"
   }
 }

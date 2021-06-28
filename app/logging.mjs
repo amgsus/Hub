@@ -3,14 +3,16 @@
  * Modified: 2019.11.01
  */
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 import Colors from "colors/safe.js";
+
+import args from "./args.mjs";
 
 const ENTRY_LEVELS = [ "silly", "trace", "debug", "info", "warn", "error", "alert", "fatal" ];
 const MAX_ENTRY_LEVEL_LENGTH = (() => ENTRY_LEVELS.reduce((prev, that) => Math.max(prev, that.length), 0))();
 
-// ------------------------------------------------ JSDoc for Logger object ---
+// ------------------------------------------------- JSDoc for Logger object ---
 
 /**
  * @class
@@ -84,11 +86,11 @@ createLogger(label = "") {
     let wrapper = {};
 
     for ( let level of ENTRY_LEVELS ) {
-        wrapper[level] = wrapConsole(level, label);
+        wrapper[level] = args.console ? wrapConsole(level, label) : dummy;
     }
 
-    wrapper.print = wrapConsole("", label);
-    wrapper.color = (c, ...s) => console.log(Colors[c](s.join(" ")));
+    wrapper.print = args.console ? wrapConsole("", label) : dummy;
+    wrapper.color = args.console ? (c, ...s) => console.log(Colors[c](s.join(" "))) : dummy;
     return (wrapper);
 }
 
@@ -125,6 +127,12 @@ wrapConsole(level, label) {
             };
         }
     }
+}
+
+function
+dummy()
+{
+    // Nothing.
 }
 
 function now() {
