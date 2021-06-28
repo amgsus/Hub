@@ -6,8 +6,7 @@
 // -----------------------------------------------------------------------------
 
 import Colors from "colors/safe.js";
-
-import args from "./args.mjs";
+import args   from "./args.mjs";
 
 const ENTRY_LEVELS = [ "silly", "trace", "debug", "info", "warn", "error", "alert", "fatal" ];
 const MAX_ENTRY_LEVEL_LENGTH = (() => ENTRY_LEVELS.reduce((prev, that) => Math.max(prev, that.length), 0))();
@@ -89,8 +88,9 @@ createLogger(label = "") {
         wrapper[level] = args.console ? wrapConsole(level, label) : dummy;
     }
 
-    wrapper.print = args.console ? wrapConsole("", label) : dummy;
+    wrapper.plain = args.console ? wrapConsole("", label) : dummy;
     wrapper.color = args.console ? (c, ...s) => console.log(Colors[c](s.join(" "))) : dummy;
+    wrapper.print = args.console ? console.log : dummy;
     return (wrapper);
 }
 

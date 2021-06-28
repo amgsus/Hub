@@ -3,33 +3,35 @@
  *   Date: 2021.06.26
  */
 
-import { Hub }          from "./../lib/server.mjs";
-import { createLogger } from "./logging.mjs";
-import { readJSONFile, loadDic } from "./util.mjs";
-import args             from "./args.mjs";
+import { Hub }                from "./../lib/server.mjs";
+import { createLogger }       from "./logging.mjs";
+import { loadValuesFromFile } from "./util.mjs";
+import config                 from "./config.mjs";
 
 const log = createLogger();
 
-console.log(args);
-
 // Main.
 ((async () => {
-    let config = await readJSONFile(args.config);
+    log.print(`*** Hub v${config.version} ***`);
+
+    if (config.verbose) {
+        log.plain(`Running configuration:`, config);
+    }
 
     let server = new Hub();
 
-    if (args.preload) {
+    if (config.preload) {
         let entries = [];
         const logPreload = createLogger("--preload");
 
         try {
-            entries = await loadDic(args.preload);
+            entries = await loadValuesFromFile(config.preload);
         } catch (e) {
             logPreload.error(e.message);
         }
 
         for ( let x of entries ) {
-            if (args.verbose) {
+            if (config.verbose) {
                 logPreload.silly(`Added: ${x.name}`);
             }
             server.updateValue(x.name, x.value);
@@ -82,7 +84,7 @@ console.log(args);
 
     await server.listen(config.binding.port, config.binding.address); // Start listening for incoming connections.
 
-    if (args.http) {
+    if (config.http) {
         log.warn(`REST API is not implemented`);
     }
 })());

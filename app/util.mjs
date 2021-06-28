@@ -56,7 +56,7 @@ export function readJSONFile(filename) {
 
 const rex = new RegExp(/(?:\s*)(?<key>(?<mod>[#$%!~])?(?<id>[^@=]*?))(?:(?<q>\?)?=?|@(?<ts>[-+]?\d+)=)(?:(?<==)(?<value>.*))?(?:\r\n)/, "");
 
-export function loadDic(filename) {
+export function loadValuesFromFile(filename) {
     let ext = getFileExtension(filename).toLowerCase();
 
     if ([ '.txt', '.json' ].indexOf(ext) < 0) {
@@ -68,10 +68,8 @@ export function loadDic(filename) {
 
         if (ext === '.txt') {
             eachLine(filename, (line, last, cb) => {
-                console.log(line);
                 try {
                     let parsed = rex.exec(`${line}\r\n`);
-                    console.log(parsed);
                     if (parsed && parsed.groups.id) {
                         if (!parsed.groups.mod && !parsed.groups.q) {
                             entries.push({
@@ -81,7 +79,6 @@ export function loadDic(filename) {
                         }
                     }
                 } catch (eline) {
-                    console.error(eline);
                     rej(eline);
                     cb(false);
                     return;
