@@ -1,6 +1,6 @@
 /*
  * Author: A.G.
- *   Date: 2021.06.26
+ *   Date: 2021/06/26
  */
 
 import { Hub }                  from "./../lib/server.mjs";
@@ -21,24 +21,11 @@ const log = createLogger();
     let server = new Hub();
 
     if (config.preload) {
-        let entries = [];
-        const logPreload = createLogger("--preload");
-
         try {
-            let tuple = await importValuesFromFile(config.preload);
-            if (tuple.ignoredCount > 0 && config.verbose) {
-                logPreload.silly(`Skipped ${tuple.ignoredCount} special key(s)`);
-            }
-            entries = tuple.entries;
+            await preload(server, config.preload);
         } catch (e) {
-            logPreload.error(e.message);
-        }
-
-        for ( let x of entries ) {
-            if (config.verbose) {
-                logPreload.silly(`Added: "${x.name}"`);
-            }
-            server.updateValue(x.name, x.value);
+            console.error(e);
+            log.error(`Failed to preload dictionary from file: ${config.preload}\r\n${e.message}`);
         }
     }
 
@@ -80,8 +67,26 @@ const log = createLogger();
         }
     }));
 
+    server.on(`identification`, (client, clientName) => {
+        if (config.verbose) {
+            log.info(`${client.idString} identified as "${clientName}"`);
+        }
+    });
+
+    server.on(`registerRPC`, (client, name) => {
+        if (config.verbose) {
+            log.trace(`${client.idString} registered RPC "${name}"`);
+        }
+    });
+
+    server.on(`unregisterRPC`, (client, name) => {
+        if (config.verbose) {
+            log.trace(`${client.idString} unregistered RPC "${name}"`);
+        }
+    });
+
     process.on(`SIGINT`, (async () => {
-        log.info(`Caught SIGINT: stopping the server...`);
+        log.info(`Caught SIGINT (Ctrl+C): stopping the server...`);
         await server.stop();
         process.exit();
     }));
@@ -92,3 +97,25 @@ const log = createLogger();
         log.warn(`REST API is not implemented`);
     }
 })());
+
+async function preload(server, filename) {
+    const logPreload = createLogger("Preload");
+    let entries = [];
+
+    try {
+        let tuple = await importValuesFromFile(filename);
+        if (tuple.ignoredCount > 0 && config.verbose) {
+            logPreload.silly(`Skipped ${tuple.ignoredCount} special key(s)`);
+        }
+        entries = tuple.entries;
+    } catch (e) {
+        logPreload.error(e.message);
+    }
+
+    for ( let x of entries ) {
+        server.updateValue(x.name, x.value);
+        if (config.verbose) {
+            logPreload.silly(`Updated: ${x.name}`);
+        }
+    }
+}

@@ -1,6 +1,6 @@
 /*
  * Author: A.G.
- *   Date: 2021.06.29
+ *   Date: 2021/06/29
  */
 
 import { readFileSync }                     from "fs";

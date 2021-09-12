@@ -1,19 +1,21 @@
 {
   "name": "@amgsus/hub",
-  "version": "0.1.0",
-  "description": "Key-value exchange & RPC server (Mediator)",
+  "version": "0.1.1",
+  "description": "Key-value exchange & RPC server (aka Mediator)",
   "main": "index.mjs",
   "scripts": {
-    "start": "node ./app/service.mjs"
+    "start": "node ./app/service.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
   "author": "A.G.",
   "license": "MIT",
   "dependencies": {
-    "colors": "1.4.0",
-    "commander": "5.1.0",
-    "line-reader": "0.4.0"
+    "colors": "^1.4.0",
+    "commander": "^8.2.0"
   },
   "optionalDependencies": {
-    "@hapi/hapi": "20.1.4"
+    "@hapi/hapi": "^20.1.5",
+    "line-reader": "^0.4.0"
   }
 }

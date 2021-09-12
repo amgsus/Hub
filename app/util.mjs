@@ -1,9 +1,6 @@
 /*
- * Hub
- *
- * By:          A.G.
- * Created:     2021.06.25
- * Modified:    2021.06.25
+ * Author: A.G.
+ *   Date: 2021/06/25
  */
 
 import { readFile, createReadStream }                 from 'fs';
