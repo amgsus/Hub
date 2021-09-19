@@ -2,5 +2,22 @@
     "binding": {
         "address": "0.0.0.0",
         "port": 7778
-    }
+    },
+    "behavior": {
+        "createEmptyKeysOnRequest": false,
+        "echoNonExistingKeysOnRequest": false,
+        "deletingKeys": {
+            "onlyLocalhostConnections": true
+        }
+    },
+    "features": {
+        "rpc": true,
+        "dump": true,
+        "delete": true,
+        "fetch": true,
+        "direct": true,
+        "online": true,
+        "json": true
+    },
+    "defaultNotificationMask": ""
 }

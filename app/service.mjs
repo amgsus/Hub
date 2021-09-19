@@ -18,7 +18,9 @@ const log = createLogger();
         log.plain(`Running configuration:`, config);
     }
 
-    let server = new Hub();
+    let server = new Hub({
+        defaultNotificationMask: config.defaultNotificationMask
+    });
 
     if (config.preload) {
         try {
@@ -29,21 +31,21 @@ const log = createLogger();
         }
     }
 
-    server.on(`listening`, ((thisServer, port, ip) => {
+    server.on(`listening`, ((binding) => {
         let msg = ``;
-        switch (ip) {
+        switch (binding.address) {
             case "127.0.0.1":
             case "localhost":
-                msg = `Private localhost server is listening on port ${port}`;
+                msg = `Private localhost server is listening on port ${binding.port}`;
                 break;
             case null:
             case "":
             case "0.0.0.0":
             case "::":
-                msg = `Public server is listening on port ${port}`;
+                msg = `Public server is listening on port ${binding.port}`;
                 break;
             default:
-                msg = `Server is bind to ${ip} and listening on ${port}`;
+                msg = `Server is bind to ${binding.address} and listening on ${binding.port}`;
                 break;
         }
         log.info(msg);
@@ -85,16 +87,23 @@ const log = createLogger();
         }
     });
 
-    process.on(`SIGINT`, (async () => {
-        log.info(`Caught SIGINT (Ctrl+C): stopping the server...`);
+    server.on("stop", () => {
+        log.info("Stopped");
+    });
+
+    process.on("SIGINT", (async () => {
+        log.debug("Caught SIGINT (Ctrl+C): stopping the server...");
         await server.stop();
-        process.exit();
     }));
 
-    await server.listen(config.binding.port, config.binding.address); // Start listening for incoming connections.
+    await server.listen(config.binding.port, config.binding.address);
 
     if (config.http) {
-        log.warn(`REST API is not implemented`);
+        try {
+            await startRestfulServer(server);
+        } catch (e) {
+            log.error(`Failed to start RESTful server: ${e.message}`);
+        }
     }
 })());
 
@@ -118,4 +127,21 @@ async function preload(server, filename) {
             logPreload.silly(`Updated: ${x.name}`);
         }
     }
+}
+
+async function startRestfulServer(server) {
+    let module;
+    try {
+        module = await import("./restapi.mjs");
+    } catch (e) {
+        log.error(`Failed to load RESTful HTTP server: ${e.message}`);
+        if (e.code === "ERR_MODULE_NOT_FOUND") {
+            log.error(`Not all dependencies are installed`);
+        } else {
+            console.error(e);
+        }
+        throw e;
+    }
+    let restfulServer = module.createServer(server);
+    await restfulServer.listen();
 }

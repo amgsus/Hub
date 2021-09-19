@@ -29,7 +29,7 @@ const args = (() => {
         .option("-m, --mirror <ip>[:<port>]",
             "mirror remote instance")
         .option("-d, --preload <file>",
-            "preload dictionary with key-values from file")
+            "preload dictionary with key-values from file (.txt; .json; .properties)")
         .option("-h, --http [<ip>[:<port>]]",
             "enable REST API server on specified IP-address and port")
         .option("--debug",

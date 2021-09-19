@@ -56,7 +56,7 @@ const rex = new RegExp(/(?:\s*)(?<key>(?<mod>[#$%!~])?(?<id>[^@=]*?))(?:(?<q>\?)
 export function importValuesFromFile(filename) {
     let ext = getFileExtension(filename).toLowerCase();
 
-    if ([ '.txt', '.json' ].indexOf(ext) < 0) {
+    if ([ '.txt', '.json', '.properties' ].indexOf(ext) < 0) {
         throw new Error(`Unsupported file extension: ${getFileExtension(filename)}`);
     }
 
@@ -79,7 +79,7 @@ export function importValuesFromFile(filename) {
         let entries = [];
         let ignoredCount = 0;
 
-        if (ext === '.txt') {
+        if (ext === '.txt' || ext === '.properties') {
             eachLine(filename, (line, last, cb) => {
                 let result = true;
                 try {
