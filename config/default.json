@@ -15,9 +15,9 @@
         "dump": true,
         "delete": true,
         "fetch": true,
-        "direct": true,
         "online": true,
-        "json": true
+        "regex": true,
+        "identify": true
     },
     "defaultNotificationMask": ""
 }
