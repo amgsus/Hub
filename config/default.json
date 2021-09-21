@@ -19,5 +19,6 @@
         "regex": true,
         "identify": true
     },
-    "defaultNotificationMask": ""
+    "defaultNotificationMask": "",
+    "crlfLineEnding": true
 }

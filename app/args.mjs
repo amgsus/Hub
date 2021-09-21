@@ -25,13 +25,9 @@ const args = (() => {
         .option("-p, --port <n>",
             "specify network port server listens on", "7778")
         .option("-l, --local",
-            "force bind server to local host", false)
-        .option("-m, --mirror <ip>[:<port>]",
-            "mirror remote instance")
+            "bind server to localhost", false)
         .option("-d, --preload <file>",
             "preload dictionary with key-values from file (.txt; .json; .properties)")
-        .option("-h, --http [<ip>[:<port>]]",
-            "enable REST API server on specified IP-address and port")
         .option("--debug",
             "enable debug output")
         .option("--verbose",

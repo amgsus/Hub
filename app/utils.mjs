@@ -7,7 +7,6 @@ import { readFile, createReadStream }                 from 'fs';
 import args                                           from './args.mjs';
 import { extname as getFileExtension }                from 'path';
 import { createInterface as createReadLineInterface } from 'readline';
-import { eachLine }                                   from 'line-reader';
 import { REGEX as KeyValueRegex }                     from './../lib/stream.mjs';
 
 /**
@@ -53,7 +52,7 @@ export function readJSONFile(filename) {
 
 const rex = new RegExp(/(?:\s*)(?<key>(?<mod>[#$%!~])?(?<id>[^@=]*?))(?:(?<q>\?)?=?|@(?<ts>[-+]?\d+)=)(?:(?<==)(?<value>.*))?(?:\r\n)/, "");
 
-export function importValuesFromFile(filename) {
+export function importValuesFromFile(eachLine, filename) {
     let ext = getFileExtension(filename).toLowerCase();
 
     if ([ '.txt', '.json', '.properties' ].indexOf(ext) < 0) {
@@ -123,4 +122,8 @@ export function importValuesFromFile(filename) {
             }).catch(rej).then(res);
         }
     });
+}
+
+export function isModuleNotFound(error) {
+    return error.code === "ERR_MODULE_NOT_FOUND";
 }

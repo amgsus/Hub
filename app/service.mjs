@@ -5,8 +5,12 @@
 
 import { Hub }                  from "./../lib/server.mjs";
 import { createLogger }         from "./logging.mjs";
-import { importValuesFromFile } from "./util.mjs";
 import config                   from "./config.mjs";
+
+import {
+    importValuesFromFile,
+    isModuleNotFound
+} from "./utils.mjs";
 
 const log = createLogger();
 
@@ -97,22 +101,28 @@ const log = createLogger();
     }));
 
     await server.listen(config.binding.port, config.binding.address);
-
-    if (config.http) {
-        try {
-            await startRestfulServer(server);
-        } catch (e) {
-            log.error(`Failed to start RESTful server: ${e.message}`);
-        }
-    }
 })());
 
 async function preload(server, filename) {
+    const MODULE_NAME = "line-reader";
     const logPreload = createLogger("Preload");
+
     let entries = [];
+    let module;
 
     try {
-        let tuple = await importValuesFromFile(filename);
+        module = await import(MODULE_NAME);
+    } catch (e) {
+        if (isModuleNotFound(e)) {
+            log.error(`Module "${MODULE_NAME}" not found: --preload feature requires it to be installed`);
+        } else {
+            log.error(e.message);
+        }
+        return;
+    }
+
+    try {
+        let tuple = await importValuesFromFile(module.eachLine, filename);
         if (tuple.ignoredCount > 0 && config.verbose) {
             logPreload.silly(`Skipped ${tuple.ignoredCount} special key(s)`);
         }
@@ -122,26 +132,9 @@ async function preload(server, filename) {
     }
 
     for ( let x of entries ) {
-        server.updateValue(x.name, x.value);
+        server.updateValue(x.name, x.value, false);
         if (config.verbose) {
             logPreload.silly(`Updated: ${x.name}`);
         }
     }
-}
-
-async function startRestfulServer(server) {
-    let module;
-    try {
-        module = await import("./restapi.mjs");
-    } catch (e) {
-        log.error(`Failed to load RESTful HTTP server: ${e.message}`);
-        if (e.code === "ERR_MODULE_NOT_FOUND") {
-            log.error(`Not all dependencies are installed`);
-        } else {
-            console.error(e);
-        }
-        throw e;
-    }
-    let restfulServer = module.createServer(server);
-    await restfulServer.listen();
 }

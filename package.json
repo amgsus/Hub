@@ -1,10 +1,10 @@
 {
   "name": "@amgsus/hub",
-  "version": "0.1.1",
-  "description": "Key-value exchange & RPC server (aka Mediator)",
+  "version": "0.2.0",
+  "description": "Key-value exchange server (aka Mediator) & RPC dispatcher",
   "main": "index.mjs",
   "scripts": {
-    "start": "node ./app/service.mjs",
+    "service": "node ./app/service.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,7 +15,6 @@
     "commander": "^8.2.0"
   },
   "optionalDependencies": {
-    "@hapi/hapi": "^20.1.5",
     "line-reader": "^0.4.0"
   }
 }
