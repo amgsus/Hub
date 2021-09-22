@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug" type="NodeJSConfigurationType" application-parameters="--verbose --preload example.properties" path-to-js-file="app/service.mjs" working-dir="$PROJECT_DIR$">
+    <method v="2" />
+  </configuration>
+</component>

@@ -23,7 +23,8 @@ const log = createLogger();
     }
 
     let server = new Hub({
-        defaultNotificationMask: config.defaultNotificationMask
+        defaultNotificationMask: config.defaultNotificationMask,
+        clientOpts: config.clientOptions.default
     });
 
     if (config.preload) {
@@ -100,7 +101,7 @@ const log = createLogger();
         await server.stop();
     }));
 
-    await server.listen(config.binding.port, config.binding.address);
+    await server.listen(config.server.binding.port, config.server.binding.address);
 })());
 
 async function preload(server, filename) {

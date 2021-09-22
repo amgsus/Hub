@@ -1,15 +1,29 @@
 {
-    "binding": {
-        "address": "0.0.0.0",
-        "port": 7778
+    "server": {
+        "binding": {
+            "address": "0.0.0.0",
+            "port": 7777
+        },
+        "notificationMask": "*",
+        "mirrors": [
+            {
+                "binding": {
+                    "address": "0.0.0.0",
+                    "port": 7778
+                },
+                "notificationMask": "",
+                "writable": true
+            }
+        ]
     },
+
     "behavior": {
         "createEmptyKeysOnRequest": false,
-        "echoNonExistingKeysOnRequest": false,
         "deletingKeys": {
             "onlyLocalhostConnections": true
         }
     },
+
     "features": {
         "rpc": true,
         "dump": true,
@@ -17,8 +31,16 @@
         "fetch": true,
         "online": true,
         "regex": true,
-        "identify": true
+        "identify": true,
+        "options": true
     },
-    "defaultNotificationMask": "",
-    "crlfLineEnding": true
+
+    "clientOptions": {
+        "default": {
+            "retrieveNonExisting": false,
+            "lineEnding": "lf",
+            "regexMode": false,
+            "encoding": "utf8"
+        }
+    }
 }
