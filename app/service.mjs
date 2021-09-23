@@ -3,14 +3,19 @@
  *   Date: 2021/06/26
  */
 
-import { Hub }                  from "./../lib/server.mjs";
-import { createLogger }         from "./logging.mjs";
-import config                   from "./config.mjs";
+import { Hub }          from "./../lib/server.mjs";
+import { createLogger } from "./logging.mjs";
+import config           from "./config.mjs";
 
 import {
     importValuesFromFile,
     isModuleNotFound
 } from "./utils.mjs";
+
+import {
+    HubDictionary,
+    HubRPCDispatcher
+} from "./../index.mjs";
 
 const log = createLogger();
 
@@ -22,10 +27,13 @@ const log = createLogger();
         log.plain(`Running configuration:`, config);
     }
 
+    let dictionary = new HubDictionary(); // Shared between instances.
+    let rpcDispatcher = new HubRPCDispatcher(); // Shared between instances.
+
     let server = new Hub({
         defaultNotificationMask: config.defaultNotificationMask,
         clientOpts: config.clientOptions.default
-    });
+    }, dictionary, rpcDispatcher);
 
     if (config.preload) {
         try {
@@ -62,21 +70,21 @@ const log = createLogger();
 
     server.on(`accept`, ((clientInfo) => {
         log.debug(`A new client has connected: ${clientInfo.remoteAddress} (ID ${clientInfo.id})`);
-        log.silly(`Total connected clients: ${server.numOfConnections}`);
+        log.trace(`Total connected clients: ${server.numOfConnections}`);
     }));
 
     server.on(`disconnect`, ((clientInfo) => {
         log.debug(`Client has disconnected: ${clientInfo.remoteAddress}`);
         if (server.numOfConnections > 0) {
-            log.silly(`Remaining connected clients: ${server.numOfConnections}`);
+            log.trace(`Remaining connected clients: ${server.numOfConnections}`);
         } else {
-            log.silly(`No more clients connected`);
+            log.trace(`No more clients connected`);
         }
     }));
 
     server.on(`identification`, (client, clientName) => {
         if (config.verbose) {
-            log.info(`${client.idString} identified as "${clientName}"`);
+            log.trace(`${client.idString} identified as "${clientName}"`);
         }
     });
 

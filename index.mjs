@@ -5,6 +5,8 @@
  *   Date: 2020/07/19
  */
 
-import { Hub } from "./lib/server.mjs";
+export { Hub, Hub as default } from "./lib/server.mjs";
 
-export default Hub;
+export { HubDictionary, Entry } from "./lib/dictionary.mjs";
+
+export { HubRPCDispatcher, RPCCall } from "./lib/rpc.mjs";
