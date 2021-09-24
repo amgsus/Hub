@@ -30,6 +30,10 @@ const log = createLogger();
     let sharedDictionary = new HubDictionary(); // Shared between server instances.
     let sharedRPCDispatcher = new HubRPCDispatcher(); // Shared between server instances.
 
+    if (config.debug) {
+        addEventTracingLoggersToDictionary(sharedDictionary);
+    }
+
     let server = new Hub({
         defaultNotificationMask: config.server.notificationMask,
         clientOpts: config.clientOptions.default,
@@ -38,6 +42,13 @@ const log = createLogger();
 
     let mirrors = [];
 
+    const countConnectedClients = () => {
+        return server.numOfConnections
+            + mirrors.reduce((total, mirrorServer) => total + mirrorServer.numOfConnections, 0);
+    };
+
+    addEventHandlersToServer(server, countConnectedClients);
+
     if (config.server.mirrors) {
         mirrors = config.server.mirrors.map((instanceConfig, index) => {
             let mirror = new Hub({
@@ -45,79 +56,11 @@ const log = createLogger();
                 clientOpts: config.clientOptions.default,
                 binding: instanceConfig.binding
             }, sharedDictionary, sharedRPCDispatcher);
+            addEventHandlersToServer(mirror, countConnectedClients);
             log.debug(`Created server mirror #${index+1}: ${mirror.address}`);
             return mirror;
         });
     }
-
-    if (config.preload) {
-        try {
-            await preload(server, config.preload);
-        } catch (e) {
-            console.error(e);
-            log.error(`Failed to preload dictionary from file: ${config.preload}\r\n${e.message}`);
-        }
-    }
-
-    server.on(`listening`, ((binding) => {
-        let msg = ``;
-        switch (binding.address) {
-            case "127.0.0.1":
-            case "localhost":
-                msg = `Private localhost server is listening on port ${binding.port}`;
-                break;
-            case null:
-            case "":
-            case "0.0.0.0":
-            case "::":
-                msg = `Public server is listening on port ${binding.port}`;
-                break;
-            default:
-                msg = `Server is bind to ${binding.address} and listening on ${binding.port}`;
-                break;
-        }
-        log.info(msg);
-    }));
-
-    server.on(`error`, ((err) => {
-        log.error(err);
-    }));
-
-    server.on(`accept`, ((clientInfo) => {
-        log.debug(`A new client has connected: ${clientInfo.remoteAddress} (ID ${clientInfo.id})`);
-        log.trace(`Total connected clients: ${server.numOfConnections}`);
-    }));
-
-    server.on(`disconnect`, ((clientInfo) => {
-        log.debug(`Client has disconnected: ${clientInfo.remoteAddress}`);
-        if (server.numOfConnections > 0) {
-            log.trace(`Remaining connected clients: ${server.numOfConnections}`);
-        } else {
-            log.trace(`No more clients connected`);
-        }
-    }));
-
-    server.on(`identification`, (client, clientName) => {
-        if (config.verbose) {
-            log.trace(`${client.idString} identified as "${clientName}"`);
-        }
-    });
-
-    server.on(`registerRPC`, (client, name) => {
-        if (config.verbose) {
-            log.trace(`${client.idString} registered RPC "${name}"`);
-        }
-    });
-
-    server.on(`unregisterRPC`, (client, name) => {
-        if (config.verbose) {
-            log.trace(`${client.idString} unregistered RPC "${name}"`);
-        }
-    });
-
-    server.on("stop", () => {
-        log.info("Stopped");
-    });
 
     process.on("SIGINT", (async () => {
         log.debug("Caught SIGINT (Ctrl+C): stopping the server(s)...");
@@ -126,6 +69,15 @@ const log = createLogger();
         }
         await server.stop();
     }));
+
+    if (config.preload) {
+        try {
+            await preload(sharedDictionary, config.preload);
+        } catch (e) {
+            console.error(e);
+            log.error(`Failed to preload dictionary from file: ${config.preload}\r\n${e.message}`);
+        }
+    }
 
     await server.listen();
 
@@ -141,7 +93,7 @@ const log = createLogger();
     }
 })());
 
-async function preload(server, filename) { // FIXME: Pass dictionary, not server.
+async function preload(dictionary, filename) { // FIXME: Pass dictionary, not server.
     const MODULE_NAME = "line-reader";
     const logPreload = createLogger("Preload");
 
@@ -170,9 +122,102 @@ async function preload(server, filename) { // FIXME: Pass dictionary, not server
     }
 
     for ( let x of entries ) {
-        server.updateValue(x.name, x.value, false);
+        dictionary.createValue(x.name, x.value);
         if (config.verbose) {
             logPreload.silly(`Updated: ${x.name}`);
         }
     }
+}
+
+function addEventHandlersToServer(server, countConnectedClients) {
+    server.on(`listening`, ((binding) => {
+        let msg = ``;
+        switch (binding.address) {
+            case "127.0.0.1":
+            case "localhost":
+                msg = `Private localhost server is listening on port ${binding.port}`;
+                break;
+            case null:
+            case "":
+            case "0.0.0.0":
+            case "::":
+                msg = `Public server is listening on port ${binding.port}`;
+                break;
+            default:
+                msg = `Server is bind to ${binding.address} and listening on ${binding.port}`;
+                break;
+        }
+        log.info(msg);
+    }));
+
+    server.on(`error`, ((err) => {
+        log.error(err);
+    }));
+
+    server.on("accept", ((clientInfo) => {
+        // FIXME: Use global counter.
+        log.debug(`A new client has connected: ${clientInfo.remoteAddress} (ID ${clientInfo.id})`);
+        //log.trace(`Total connected clients: ${server.numOfConnections}`);
+        log.trace(`Total connected clients: ${countConnectedClients()}`);
+    }));
+
+    server.on("connectionClose", ((clientInfo) => {
+        // FIXME: Use global counter.
+        log.debug(`Client has disconnected: ${clientInfo.remoteAddress}`);
+        // if (server.numOfConnections > 0) {
+        //     log.trace(`Remaining connected clients: ${server.numOfConnections}`);
+        // } else {
+        //     log.trace(`No more clients connected`);
+        // }
+        let numOfConnections = countConnectedClients();
+        if (numOfConnections > 0) {
+            log.trace(`Remaining connected clients: ${numOfConnections}`);
+        } else {
+            log.trace(`No more clients connected`);
+        }
+    }));
+
+    server.on(`identification`, (client, clientName) => {
+        if (config.verbose) {
+            log.trace(`${client.idString} identified as "${clientName}"`);
+        }
+    });
+
+    server.on(`registerRPC`, (client, name) => {
+        if (config.verbose) {
+            log.trace(`${client.idString} registered RPC "${name}"`);
+        }
+    });
+
+    server.on(`unregisterRPC`, (client, name) => {
+        if (config.verbose) {
+            log.trace(`${client.idString} unregistered RPC "${name}"`);
+        }
+    });
+
+    server.on("stop", () => {
+        log.info("Stopped");
+    });
+}
+
+function addEventTracingLoggersToDictionary(sharedDictionary) {
+    sharedDictionary.on("addSubscriber", (event) => {
+        log.silly(`Added subscriber: keyName="${event.entry.name}" client=${event.subscriber.shortIDString}`);
+    });
+
+    sharedDictionary.on("removeSubscriber", (event) => {
+        log.silly(`Removed subscriber: keyName="${event.entry.name}" client=${event.subscriber.shortIDString}`);
+    });
+
+    sharedDictionary.on("create", (entry) => {
+        log.silly(`Created key: name="${entry.name}" value="${entry.value}"`);
+    });
+
+    sharedDictionary.on("delete", (entry) => {
+        log.silly(`Deleted key: name="${entry.name}"`);
+    });
+
+    sharedDictionary.on("update", (entry) => {
+        log.silly(`Updated key: name="${entry.name}" value="${entry.value}"`);
+    });
 }

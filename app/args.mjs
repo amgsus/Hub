@@ -34,6 +34,8 @@ const args = (() => {
             "enable detailed output")
         .option("--no-console",
             "suppress any output to console")
+        .option("--log-level <level>",
+            "set minimal severity level of printed messages", "info") // FIXME: info
     ;
     Commander.parse(process.argv);
     return Commander.opts();

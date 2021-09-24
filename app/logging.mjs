@@ -136,7 +136,7 @@ dummy()
 }
 
 function now() {
-    return new Date().toISOString();
+    return `${Date.now()}`;
 }
 
 function
