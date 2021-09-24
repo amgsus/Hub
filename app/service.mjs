@@ -27,13 +27,28 @@ const log = createLogger();
         log.plain(`Running configuration:`, config);
     }
 
-    let dictionary = new HubDictionary(); // Shared between instances.
-    let rpcDispatcher = new HubRPCDispatcher(); // Shared between instances.
+    let sharedDictionary = new HubDictionary(); // Shared between server instances.
+    let sharedRPCDispatcher = new HubRPCDispatcher(); // Shared between server instances.
 
     let server = new Hub({
-        defaultNotificationMask: config.defaultNotificationMask,
-        clientOpts: config.clientOptions.default
-    }, dictionary, rpcDispatcher);
+        defaultNotificationMask: config.server.notificationMask,
+        clientOpts: config.clientOptions.default,
+        binding: config.server.binding
+    }, sharedDictionary, sharedRPCDispatcher);
+
+    let mirrors = [];
+
+    if (config.server.mirrors) {
+        mirrors = config.server.mirrors.map((instanceConfig, index) => {
+            let mirror = new Hub({
+                defaultNotificationMask: instanceConfig.notificationMask,
+                clientOpts: config.clientOptions.default,
+                binding: instanceConfig.binding
+            }, sharedDictionary, sharedRPCDispatcher);
+            log.debug(`Created server mirror #${index+1}: ${mirror.address}`);
+            return mirror;
+        });
+    }
 
     if (config.preload) {
         try {
@@ -105,14 +120,28 @@ const log = createLogger();
     });
 
     process.on("SIGINT", (async () => {
-        log.debug("Caught SIGINT (Ctrl+C): stopping the server...");
+        log.debug("Caught SIGINT (Ctrl+C): stopping the server(s)...");
+        for ( let m of mirrors ) {
+            await m.stop();
+        }
         await server.stop();
     }));
 
-    await server.listen(config.server.binding.port, config.server.binding.address);
+    await server.listen();
+
+    if (mirrors.length > 0) {
+        log.debug("Starting mirror servers...");
+        await Promise.all(mirrors.map(async (mirrorServer, index) => {
+            try {
+                await mirrorServer.listen();
+            } catch (e) {
+                log.error(`Failed to start mirror server #${index+1}: ${e.message}`);
+            }
+        }));
+    }
 })());
 
-async function preload(server, filename) {
+async function preload(server, filename) { // FIXME: Pass dictionary, not server.
     const MODULE_NAME = "line-reader";
     const logPreload = createLogger("Preload");
 
