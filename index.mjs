@@ -10,3 +10,5 @@ export { Hub, Hub as default } from "./lib/server.mjs";
 export { HubDictionary, Entry } from "./lib/dictionary.mjs";
 
 export { HubRPCDispatcher, RPCCall } from "./lib/rpc.mjs";
+
+export { HubConnectionManager } from "./lib/client.mjs";

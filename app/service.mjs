@@ -12,7 +12,7 @@ import {
 } from "./utils.mjs";
 
 import {
-    Hub,
+    Hub, HubConnectionManager,
     HubDictionary,
     HubRPCDispatcher
 } from "./../index.mjs";
@@ -27,8 +27,9 @@ const log = createLogger();
         log.plain(`Running configuration:`, config);
     }
 
-    let sharedDictionary = new HubDictionary(); // Shared between server instances.
-    let sharedRPCDispatcher = new HubRPCDispatcher(); // Shared between server instances.
+    let sharedDictionary    = new HubDictionary();
+    let sharedRPCDispatcher = new HubRPCDispatcher();
+    let connectionManager   = new HubConnectionManager();
 
     if (config.debug) {
         addEventTracingLoggersToDictionary(sharedDictionary);
@@ -38,7 +39,7 @@ const log = createLogger();
         defaultNotificationMask: config.server.notificationMask,
         clientOpts: config.clientOptions.default,
         binding: config.server.binding
-    }, sharedDictionary, sharedRPCDispatcher);
+    }, sharedDictionary, sharedRPCDispatcher, connectionManager);
 
     let mirrors = [];
 
@@ -48,19 +49,6 @@ const log = createLogger();
     };
 
     addEventListenersToServer(server, countConnectedClients);
-
-    if (config.server.mirrors) {
-        mirrors = config.server.mirrors.map((instanceConfig, index) => {
-            let mirror = new Hub({
-                defaultNotificationMask: instanceConfig.notificationMask,
-                clientOpts: config.clientOptions.default,
-                binding: instanceConfig.binding
-            }, sharedDictionary, sharedRPCDispatcher);
-            addEventListenersToServer(mirror, countConnectedClients);
-            log.debug(`Created server mirror #${index+1}: ${mirror.address}`);
-            return mirror;
-        });
-    }
 
     process.on("SIGINT", (async () => {
         log.debug("Caught SIGINT (Ctrl+C): stopping the server(s)...");
@@ -81,14 +69,22 @@ const log = createLogger();
 
     await server.listen();
 
-    if (mirrors.length > 0) {
-        log.debug("Starting mirror servers...");
-        await Promise.all(mirrors.map(async (mirrorServer, index) => {
+    if (config.server.mirrors) {
+        log.debug(`Starting server's mirrors (${config.server.mirrors.length})...`);
+        let enabledMirrors = config.server.mirrors.filter((instanceConfig) => {instanceConfig.enabled});
+        mirrors = await Promise.all(enabledMirrors.map(async (instanceConfig, index) => {
+            let mirror = new Hub({
+                defaultNotificationMask: instanceConfig.notificationMask,
+                clientOpts: config.clientOptions.default,
+                binding: instanceConfig.binding
+            }, sharedDictionary, sharedRPCDispatcher);
+            addEventListenersToServer(mirror, countConnectedClients, `Mirror #${index+1}`);
             try {
-                await mirrorServer.listen();
+                await mirror.listen();
             } catch (e) {
                 log.error(`Failed to start mirror server #${index+1}: ${e.message}`);
             }
+            return Promise.resolve(mirror);
         }));
     }
 })());
@@ -129,8 +125,8 @@ async function preload(dictionary, filename) {
     }
 }
 
-function addEventListenersToServer(server, countConnectedClients) {
-    server.on(`listening`, ((binding) => {
+function addEventListenersToServer(server, countConnectedClients, prefix = "") {
+    server.on("listening", ((binding) => {
         let msg = ``;
         switch (binding.address) {
             case "127.0.0.1":
@@ -147,7 +143,11 @@ function addEventListenersToServer(server, countConnectedClients) {
                 msg = `Server is bind to ${binding.address} and listening on ${binding.port}`;
                 break;
         }
-        log.info(msg);
+        if (prefix) {
+            log.info(`${prefix}: ${msg}`);
+        } else {
+            log.info(msg);
+        }
     }));
 
     server.on("error", ((err) => {
@@ -165,23 +165,23 @@ function addEventListenersToServer(server, countConnectedClients) {
         if (numOfConnections > 0) {
             log.trace(`Remaining connected clients: ${numOfConnections}`);
         } else {
-            log.trace(`No more clients connected`);
+            log.trace("No more clients connected");
         }
     }));
 
-    server.on(`identification`, (client, clientName) => {
+    server.on("identification", (client, clientName) => {
         if (config.verbose) {
             log.trace(`${client.idString} identified as "${clientName}"`);
         }
     });
 
-    server.on(`registerRPC`, (client, name) => {
+    server.on("registerRPC", (client, name) => {
         if (config.verbose) {
             log.trace(`${client.idString} registered RPC "${name}"`);
         }
     });
 
-    server.on(`unregisterRPC`, (client, name) => {
+    server.on("unregisterRPC", (client, name) => {
         if (config.verbose) {
             log.trace(`${client.idString} unregistered RPC "${name}"`);
         }

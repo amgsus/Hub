@@ -21,7 +21,7 @@ const args = (() => {
     Commander.version(PACKAGE_VERSION);
     Commander
         .option("-c, --config <file>",
-            "load configuration from file (JSON)", "config/default.json")
+            "load configuration from JSON-file", "config/default.json")
         .option("-p, --port <n>",
             "specify network port server listens on", "7778")
         .option("-l, --local",
