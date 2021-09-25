@@ -3,7 +3,6 @@
  *   Date: 2021/06/26
  */
 
-import { Hub }          from "./../lib/server.mjs";
 import { createLogger } from "./logging.mjs";
 import config           from "./config.mjs";
 
@@ -13,6 +12,7 @@ import {
 } from "./utils.mjs";
 
 import {
+    Hub,
     HubDictionary,
     HubRPCDispatcher
 } from "./../index.mjs";
@@ -47,7 +47,7 @@ const log = createLogger();
             + mirrors.reduce((total, mirrorServer) => total + mirrorServer.numOfConnections, 0);
     };
 
-    addEventHandlersToServer(server, countConnectedClients);
+    addEventListenersToServer(server, countConnectedClients);
 
     if (config.server.mirrors) {
         mirrors = config.server.mirrors.map((instanceConfig, index) => {
@@ -56,7 +56,7 @@ const log = createLogger();
                 clientOpts: config.clientOptions.default,
                 binding: instanceConfig.binding
             }, sharedDictionary, sharedRPCDispatcher);
-            addEventHandlersToServer(mirror, countConnectedClients);
+            addEventListenersToServer(mirror, countConnectedClients);
             log.debug(`Created server mirror #${index+1}: ${mirror.address}`);
             return mirror;
         });
@@ -93,7 +93,7 @@ const log = createLogger();
     }
 })());
 
-async function preload(dictionary, filename) { // FIXME: Pass dictionary, not server.
+async function preload(dictionary, filename) {
     const MODULE_NAME = "line-reader";
     const logPreload = createLogger("Preload");
 
@@ -129,7 +129,7 @@ async function preload(dictionary, filename) { // FIXME: Pass dictionary, not se
     }
 }
 
-function addEventHandlersToServer(server, countConnectedClients) {
+function addEventListenersToServer(server, countConnectedClients) {
     server.on(`listening`, ((binding) => {
         let msg = ``;
         switch (binding.address) {
@@ -150,25 +150,17 @@ function addEventHandlersToServer(server, countConnectedClients) {
         log.info(msg);
     }));
 
-    server.on(`error`, ((err) => {
+    server.on("error", ((err) => {
         log.error(err);
     }));
 
     server.on("accept", ((clientInfo) => {
-        // FIXME: Use global counter.
-        log.debug(`A new client has connected: ${clientInfo.remoteAddress} (ID ${clientInfo.id})`);
-        //log.trace(`Total connected clients: ${server.numOfConnections}`);
-        log.trace(`Total connected clients: ${countConnectedClients()}`);
+        log.debug(`New connection accepted: ${clientInfo.remoteAddress} (ID ${clientInfo.id})`);
+        log.trace(`Connected clients: ${countConnectedClients()}`);
     }));
 
     server.on("connectionClose", ((clientInfo) => {
-        // FIXME: Use global counter.
-        log.debug(`Client has disconnected: ${clientInfo.remoteAddress}`);
-        // if (server.numOfConnections > 0) {
-        //     log.trace(`Remaining connected clients: ${server.numOfConnections}`);
-        // } else {
-        //     log.trace(`No more clients connected`);
-        // }
+        log.debug(`Connection close: ${clientInfo.remoteAddress}`);
         let numOfConnections = countConnectedClients();
         if (numOfConnections > 0) {
             log.trace(`Remaining connected clients: ${numOfConnections}`);
