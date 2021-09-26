@@ -46,7 +46,7 @@ For older Node.js versions a key `--experimental-modules` must be added. However
 }
 ```
 
-#### Example of pre-loadable key-value file (*.txt):
+#### Example of pre-loadable key-value file (*.txt; *.properties):
 
 ```
 KeyA=ValueA

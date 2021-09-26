@@ -7,6 +7,9 @@
     "service": "node ./app/service.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "hub": "./app/service.mjs"
+  },
   "keywords": [],
   "author": "A.G.",
   "license": "MIT",

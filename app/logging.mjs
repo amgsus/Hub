@@ -143,6 +143,8 @@ function
 mapLevelColor(level)
 {
     const DEFINED_COLORS = {
+        silly: "gray",
+        trace: "",
         debug: "cyan",
         info: "green",
         warn: "yellow",

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
  * Author: A.G.
  *   Date: 2021/06/26
@@ -25,7 +27,7 @@ const log = createLogger();
     log.print(`*** Hub v${config.version} ***`);
 
     if (config.verbose) {
-        log.plain(`Running configuration:`, config);
+        log.print("Running configuration:", config);
     }
 
     let sharedDictionary    = new HubDictionary();
@@ -44,25 +46,43 @@ const log = createLogger();
 
     let mirrors = [];
 
-    const countConnectedClients = () => {
+    let countConnectedClients = () => {
         return connectionManager.numOfConnections;
     };
 
-    addEventListenersToServer(server, countConnectedClients);
+    let getInfo = (client) => {
+        return {
+            server: {
+                version: config.version
+            },
+            client: {
+                remoteAddress: client.remoteAddress
+            }
+        };
+    };
 
-    // let cleanupTimer = setInterval(() => {
-    //     sharedDictionary.cleanupUnassignedValues();
-    //     HubMatcher.getSingleton().cleanup();
-    // }, 5000); // FIXME: -> 60000
+    let utilLambdas = Object.seal({
+        countConnectedClients,
+        getInfo
+    });
 
-    process.on("SIGINT", (async () => {
-        log.debug("Caught SIGINT (Ctrl+C): stopping the server(s)...");
-        // clearInterval(cleanupTimer);
-        for ( let m of mirrors ) {
-            await m.stop();
+    addEventListenersToServer(server, utilLambdas);
+
+    process.on("SIGINT", (async () => { // FIXME: Add timeout?
+        let allServers = [ ...mirrors, server ];
+        log.debug(`Caught SIGINT (Ctrl+C): stopping ${allServers.length} server(s)...`);
+        for ( let srv of allServers ) {
+            try {
+                await srv.stop();
+            } catch (e) {
+                log.error(`Failed to stop server (${srv.address}): ${e.message}`);
+            }
         }
-        await server.stop();
     }));
+
+    process.on("beforeExit", (code) => {
+        log.info("Exiting...");
+    });
 
     if (config.preload) {
         try {
@@ -82,7 +102,7 @@ const log = createLogger();
                 clientOpts: config.clientOptions.default,
                 binding: instanceConfig.binding
             }, sharedDictionary, sharedRPCDispatcher, connectionManager);
-            addEventListenersToServer(mirror, countConnectedClients, `Mirror #${index+1}`);
+            addEventListenersToServer(mirror, utilLambdas, `Mirror #${index+1}`);
             return mirror;
         });
     }
@@ -97,8 +117,6 @@ const log = createLogger();
             log.error(`Failed to start server's mirror #${index}: ${e.message}`);
         }
     }));
-
-    log.info(`Done`);
 })());
 
 async function preload(dictionary, filename) {
@@ -137,7 +155,7 @@ async function preload(dictionary, filename) {
     }
 }
 
-function addEventListenersToServer(server, countConnectedClients, prefix = "") {
+function addEventListenersToServer(server, { countConnectedClients, getInfo }, prefix = "") {
     server.on("listening", ((binding) => {
         let msg = ``;
         switch (binding.address) {
@@ -200,7 +218,12 @@ function addEventListenersToServer(server, countConnectedClients, prefix = "") {
     });
 
     server.on("stop", () => {
-        log.info("Stopped");
+        log.info(`Stopped server: ${server.address}`);
+    });
+
+    server.on("infoRequest", (sendResponse, client) => {
+        let info = getInfo(client);
+        sendResponse(info);
     });
 }
 

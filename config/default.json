@@ -33,7 +33,8 @@
         "online": true,
         "regex": true,
         "identify": true,
-        "options": true
+        "options": true,
+        "info": true
     },
 
     "clientOptions": {
