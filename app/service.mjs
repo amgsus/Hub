@@ -45,14 +45,19 @@ const log = createLogger();
     let mirrors = [];
 
     const countConnectedClients = () => {
-        return server.numOfConnections
-            + mirrors.reduce((total, mirrorServer) => total + mirrorServer.numOfConnections, 0);
+        return connectionManager.numOfConnections;
     };
 
     addEventListenersToServer(server, countConnectedClients);
 
+    // let cleanupTimer = setInterval(() => {
+    //     sharedDictionary.cleanupUnassignedValues();
+    //     HubMatcher.getSingleton().cleanup();
+    // }, 5000); // FIXME: -> 60000
+
     process.on("SIGINT", (async () => {
         log.debug("Caught SIGINT (Ctrl+C): stopping the server(s)...");
+        // clearInterval(cleanupTimer);
         for ( let m of mirrors ) {
             await m.stop();
         }
@@ -170,7 +175,7 @@ function addEventListenersToServer(server, countConnectedClients, prefix = "") {
         log.debug(`Connection close: ${clientInfo.remoteAddress}`);
         let numOfConnections = countConnectedClients();
         if (numOfConnections > 0) {
-            log.trace(`Remaining connected clients: ${numOfConnections}`);
+            log.trace(`Connected clients: ${numOfConnections}`);
         } else {
             log.trace("No more clients connected");
         }
