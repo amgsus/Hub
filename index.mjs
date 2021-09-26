@@ -11,4 +11,6 @@ export { HubDictionary, Entry } from "./lib/dictionary.mjs";
 
 export { HubRPCDispatcher, RPCCall } from "./lib/rpc.mjs";
 
-export { HubConnectionManager } from "./lib/client.mjs";
+export { HubConnectionManager } from "./lib/connmgr.mjs";
+
+export { HubMatcher } from "./lib/match.mjs";

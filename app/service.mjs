@@ -12,7 +12,8 @@ import {
 } from "./utils.mjs";
 
 import {
-    Hub, HubConnectionManager,
+    Hub,
+    HubConnectionManager,
     HubDictionary,
     HubRPCDispatcher
 } from "./../index.mjs";
@@ -67,26 +68,32 @@ const log = createLogger();
         }
     }
 
-    await server.listen();
-
     if (config.server.mirrors) {
-        log.debug(`Starting server's mirrors (${config.server.mirrors.length})...`);
-        let enabledMirrors = config.server.mirrors.filter((instanceConfig) => {instanceConfig.enabled});
-        mirrors = await Promise.all(enabledMirrors.map(async (instanceConfig, index) => {
+        log.debug(`Initializing server's mirrors (${config.server.mirrors.length})...`);
+        let enabledMirrors = config.server.mirrors.filter((instanceConfig) => instanceConfig.enabled);
+        mirrors = enabledMirrors.map((instanceConfig, index) => {
             let mirror = new Hub({
                 defaultNotificationMask: instanceConfig.notificationMask,
                 clientOpts: config.clientOptions.default,
                 binding: instanceConfig.binding
-            }, sharedDictionary, sharedRPCDispatcher);
+            }, sharedDictionary, sharedRPCDispatcher, connectionManager);
             addEventListenersToServer(mirror, countConnectedClients, `Mirror #${index+1}`);
-            try {
-                await mirror.listen();
-            } catch (e) {
-                log.error(`Failed to start mirror server #${index+1}: ${e.message}`);
-            }
-            return Promise.resolve(mirror);
-        }));
+            return mirror;
+        });
     }
+
+    await server.listen();
+
+    await Promise.all(mirrors.map(async (instance, index) => {
+        try {
+            log.trace(`Socket ${instance.address}: start listening...`);
+            await instance.listen();
+        } catch (e) {
+            log.error(`Failed to start server's mirror #${index}: ${e.message}`);
+        }
+    }));
+
+    log.info(`Done`);
 })());
 
 async function preload(dictionary, filename) {
