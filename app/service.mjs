@@ -36,6 +36,9 @@ const log = createLogger();
 
     if (config.debug) {
         addEventTracingLoggersToDictionary(sharedDictionary);
+        sharedRPCDispatcher.debug = (...s) => {
+            log.trace(`[RPCDispatcher]`, ...s);
+        }
     }
 
     let server = new Hub({
@@ -225,6 +228,10 @@ function addEventListenersToServer(server, { countConnectedClients, getInfo }, p
         let info = getInfo(client);
         sendResponse(info);
     });
+
+    server.on("clientError", (client, error) => {
+        log.trace(`${client.idString}: Error: ${error.message}`);
+    })
 }
 
 function addEventTracingLoggersToDictionary(sharedDictionary) {

@@ -37,12 +37,19 @@
         "info": true
     },
 
+    "rpc": {
+        "limits": {
+            "maxTimeout": 60000
+        }
+    },
+
     "clientOptions": {
         "default": {
             "retrieveNonExisting": false,
             "lineEnding": "lf",
             "regexMode": false,
-            "encoding": "utf8"
+            "encoding": "utf8",
+            "rpcTimeout": 10000
         }
     }
 }
